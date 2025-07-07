@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LunaX</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap');
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #fff;
+    }
+    #logo {
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+    }
+    #settingsIcon {
+      cursor: pointer;
+    }
+    #output {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      padding: 2rem;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+    #output.fading {
+      opacity: 0;
+    }
+    #inputSection {
+      display: flex;
+      border-top: 1px solid #fff;
+      padding: 1rem;
+      background: #111;
+    }
+    input {
+      flex: 1;
+      padding: 0.8rem;
+      font-size: 1rem;
+      background: #000;
+      color: #fff;
+      border: 1px solid #fff;
+      outline: none;
+    }
+    button {
+      padding: 0.8rem 1rem;
+      font-size: 1.2rem;
+      background: #000;
+      color: #fff;
+      border: 1px solid #fff;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #222;
+    }
+    .darkmode {
+      background: #000;
+      color: #fff;
+    }
+    .typewriter {
+      display: inline-block;
+      white-space: pre-wrap;
+    }
+    #settingsModal {
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: #111;
+      border: 1px solid #fff;
+      padding: 1rem;
+      display: none;
+      z-index: 10;
+    }
+    #settingsModal button {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    #qrPlaceholder {
+      width: 200px;
+      height: 200px;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      margin: auto;
+    }
+    #qrPlaceholder img {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div id="logo">LunaX</div>
+    <div id="settingsIcon" onclick="toggleSettings()">⚙</div>
+  </header>
+
+  <div id="output">Search when you feel like.</div>
+
+  <div id="inputSection">
+    <input type="text" id="userInput" placeholder="Search a term..." />
+    <button onclick="handleInput()">↑</button>
+  </div>
+
+  <div id="settingsModal">
+    <button onclick="showDonate()">☕ Support LunaX</button>
+    <div id="qrPlaceholder">
+      <img src="https://i.postimg.cc/P5TPyxxj/Screenshot-20250702-204546-Fam-App.jpg" alt="Donate QR" />
+    </div>
+  </div>
+
+  <script>
+    const commands = {
+      "/dark": () => document.body.classList.toggle("darkmode")
+    };
+
+    function normalizeInput(text) {
+      return text.toLowerCase().replace(/[^a-z0-9]/gi, '').trim();
+    }
+
+    function toggleSettings() {
+      const modal = document.getElementById("settingsModal");
+      modal.style.display = modal.style.display === "block" ? "none" : "block";
+    }
+
+    function showDonate() {
+      const qr = document.getElementById("qrPlaceholder");
+      qr.style.display = "flex";
+    }
+
+    function handleInput() {
+      const input = document.getElementById("userInput");
+      const raw = input.value.trim();
+      const query = normalizeInput(raw);
+      if (!query) return displayOutput("Give me a name, not silence.");
+
+      if (commands[raw.toLowerCase()]) {
+        commands[raw.toLowerCase()]();
+        input.value = "";
+        return;
+      }
+
+      animateOutput("LunaX: Establishing connection with our moon servers...");
+
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Not found");
+          return res.json();
+        })
+        .then(data => {
+          if (data.extract) {
+            animateOutput(data.extract);
+          } else {
+            animateOutput("Nothing sharp enough. Try again.");
+          }
+        })
+        .catch(() => {
+          animateOutput("LunaX couldn’t locate that. Try another term or check spelling.");
+        });
+
+      input.value = "";
+    }
+
+    function displayOutput(text) {
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+      const span = document.createElement("span");
+      span.classList.add("typewriter");
+      output.appendChild(span);
+
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          span.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, 20);
+        }
+      }
+      type();
+    }
+
+    function animateOutput(text) {
+      const output = document.getElementById("output");
+      output.classList.add("fading");
+      setTimeout(() => {
+        output.classList.remove("fading");
+        displayOutput(text);
+      }, 1000);
+    }
+
+    document.getElementById("userInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") handleInput();
+    });
+  </script>
+</body>
+</html>
